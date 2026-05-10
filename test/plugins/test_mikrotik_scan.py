@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import types
 from unittest.mock import MagicMock, patch
@@ -6,9 +7,10 @@ from unittest.mock import MagicMock, patch
 
 _ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 _SERVER = os.path.join(_ROOT, "server")
+_PLUGINS_ROOT = os.path.join(_ROOT, "front", "plugins")
 _PLUGIN_DIR = os.path.join(_ROOT, "front", "plugins", "mikrotik_scan")
 
-for _path in [_ROOT, _SERVER, _PLUGIN_DIR]:
+for _path in [_ROOT, _SERVER, _PLUGINS_ROOT, _PLUGIN_DIR]:
     if _path not in sys.path:
         sys.path.insert(0, _path)
 
@@ -26,6 +28,24 @@ if "librouteros.exceptions" not in sys.modules:
 
     _librouteros_exceptions.TrapError = _TrapError
     sys.modules["librouteros.exceptions"] = _librouteros_exceptions
+
+if "plugin_helper" not in sys.modules:
+    _plugin_helper = types.ModuleType("plugin_helper")
+
+    class _PluginObjects:
+        def __init__(self, *_args, **_kwargs):
+            pass
+
+    def _normalize_mac(mac):
+        return str(mac).strip().lower()
+
+    def _is_mac(value):
+        return bool(re.match(r"^[0-9a-f]{2}([-:])[0-9a-f]{2}(\1[0-9a-f]{2}){4}$", str(value).strip().lower()))
+
+    _plugin_helper.Plugin_Objects = _PluginObjects
+    _plugin_helper.normalize_mac = _normalize_mac
+    _plugin_helper.is_mac = _is_mac
+    sys.modules["plugin_helper"] = _plugin_helper
 
 
 with patch("helper.get_setting_value", return_value="UTC"), \
