@@ -62,12 +62,13 @@ def get_entries(plugin_objects: Plugin_Objects) -> Plugin_Objects:
         leases = api('/ip/dhcp-server/lease/print')
 
         for lease in leases:
-            lease_id = lease.get('.id')
             status = lease.get('status', '')
             if status != "bound":
+                lease_id = lease.get('.id')
                 mylog('verbose', f"Skipping lease ID: {lease_id}, Status: {status}")
                 continue
 
+            lease_id = lease.get('.id')
             raw_mac_address = lease.get('mac-address')
             if not raw_mac_address:
                 mylog('verbose', f"Skipping lease ID: {lease_id}, missing mac-address")

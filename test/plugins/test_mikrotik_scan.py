@@ -1,5 +1,4 @@
 import os
-import re
 import sys
 import types
 from unittest.mock import MagicMock, patch
@@ -37,17 +36,16 @@ if "plugin_helper" not in sys.modules:
             pass
 
     def _normalize_mac(mac):
-        value = str(mac).strip().lower()
-        if ":" in value:
-            parts = value.split(":")
-        elif "-" in value:
-            parts = value.split("-")
-        else:
-            parts = [value[i:i + 2] for i in range(0, len(value), 2)]
-        return ":".join(part.strip().zfill(2) for part in parts)
+        return str(mac).strip().lower().replace("-", ":")
 
     def _is_mac(value):
-        return bool(re.match(r"^[0-9a-f]{2}([-:])[0-9a-f]{2}(\1[0-9a-f]{2}){4}$", str(value).strip().lower()))
+        parts = str(value).strip().lower().split(":")
+        if len(parts) != 6:
+            return False
+        try:
+            return all(len(part) == 2 and 0 <= int(part, 16) <= 255 for part in parts)
+        except ValueError:
+            return False
 
     _plugin_helper.Plugin_Objects = _PluginObjects
     _plugin_helper.normalize_mac = _normalize_mac
