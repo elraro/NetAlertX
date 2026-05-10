@@ -37,7 +37,14 @@ if "plugin_helper" not in sys.modules:
             pass
 
     def _normalize_mac(mac):
-        return str(mac).strip().lower()
+        value = str(mac).strip().lower()
+        if ":" in value:
+            parts = value.split(":")
+        elif "-" in value:
+            parts = value.split("-")
+        else:
+            parts = [value[i:i + 2] for i in range(0, len(value), 2)]
+        return ":".join(part.strip().zfill(2) for part in parts)
 
     def _is_mac(value):
         return bool(re.match(r"^[0-9a-f]{2}([-:])[0-9a-f]{2}(\1[0-9a-f]{2}){4}$", str(value).strip().lower()))

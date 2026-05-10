@@ -63,7 +63,7 @@ def get_entries(plugin_objects: Plugin_Objects) -> Plugin_Objects:
 
         for lease in leases:
             lease_id = lease.get('.id')
-            status = lease.get('status') or ''
+            status = lease.get('status', '')
             if status != "bound":
                 mylog('verbose', f"Skipping lease ID: {lease_id}, Status: {status}")
                 continue
@@ -79,9 +79,9 @@ def get_entries(plugin_objects: Plugin_Objects) -> Plugin_Objects:
                 continue
 
             address = lease.get('address')
-            host_name = lease.get('host-name') or ''
-            comment = lease.get('comment') or ''
-            last_seen = lease.get('last-seen') or ''
+            host_name = lease.get('host-name', '')
+            comment = lease.get('comment', '')
+            last_seen = lease.get('last-seen', '')
             device_name = comment or host_name or "(unknown)"
 
             mylog('verbose', f"ID: {lease_id}, Address: {address}, MAC: {mac_address}, Host Name: {host_name}, Comment: {comment}, Last Seen: {last_seen}, Status: {status}")
