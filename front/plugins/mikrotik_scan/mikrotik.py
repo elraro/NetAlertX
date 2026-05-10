@@ -7,7 +7,7 @@ import sys
 INSTALL_PATH = os.getenv('NETALERTX_APP', '/app')
 sys.path.extend([f"{INSTALL_PATH}/front/plugins", f"{INSTALL_PATH}/server"])
 
-from plugin_helper import Plugin_Objects  # noqa: E402 [flake8 lint suppression]
+from plugin_helper import Plugin_Objects, normalize_mac, is_mac  # noqa: E402 [flake8 lint suppression]
 from logger import mylog, Logger  # noqa: E402 [flake8 lint suppression]
 from helper import get_setting_value  # noqa: E402 [flake8 lint suppression]
 from const import logPath  # noqa: E402 [flake8 lint suppression]
@@ -62,28 +62,41 @@ def get_entries(plugin_objects: Plugin_Objects) -> Plugin_Objects:
         leases = api('/ip/dhcp-server/lease/print')
 
         for lease in leases:
+            status = lease.get('status', '')
+            if status != "bound":
+                lease_id = lease.get('.id')
+                mylog('verbose', f"Skipping lease ID: {lease_id}, Status: {status}")
+                continue
+
             lease_id = lease.get('.id')
+            raw_mac_address = lease.get('mac-address')
+            if not raw_mac_address:
+                mylog('verbose', f"Skipping lease ID: {lease_id}, missing mac-address")
+                continue
+
+            mac_address = normalize_mac(raw_mac_address)
+            if not is_mac(mac_address):
+                mylog('verbose', f"Skipping lease ID: {lease_id}, invalid mac-address: {raw_mac_address}")
+                continue
+
             address = lease.get('address')
-            mac_address = lease.get('mac-address').lower()
-            host_name = lease.get('host-name')
-            comment = lease.get('comment')
-            last_seen = lease.get('last-seen')
-            status = lease.get('status')
+            host_name = lease.get('host-name', '')
+            comment = lease.get('comment', '')
+            last_seen = lease.get('last-seen', '')
             device_name = comment or host_name or "(unknown)"
 
             mylog('verbose', f"ID: {lease_id}, Address: {address}, MAC: {mac_address}, Host Name: {host_name}, Comment: {comment}, Last Seen: {last_seen}, Status: {status}")
 
-            if (status == "bound"):
-                plugin_objects.add_object(
-                    primaryId   = mac_address,
-                    secondaryId = address,
-                    watched1    = address,
-                    watched2    = device_name,
-                    watched3    = host_name,
-                    watched4    = last_seen,
-                    extra       = '',
-                    helpVal1    = comment,
-                    foreignKey  = mac_address)
+            plugin_objects.add_object(
+                primaryId   = mac_address,
+                secondaryId = address,
+                watched1    = address,
+                watched2    = device_name,
+                watched3    = host_name,
+                watched4    = last_seen,
+                extra       = '',
+                helpVal1    = comment,
+                foreignKey  = mac_address)
 
     except TrapError as e:
         mylog('error', [f"An error occurred: {e}"])
